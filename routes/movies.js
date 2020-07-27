@@ -1,73 +1,56 @@
 const express = require('express');
-const router = express.Router();
-const {MovieGenres, validate} = require('../models/movie');
 const mongoose = require('mongoose');
+const router = express.Router();
+const {Movie, validate} = require('../models/movie');
+const {Genre} = require('../models/genre');
 
-            /*using postman send a put request to 
-          localhost:3000/api/genres/?searchBy=name */
-router.get('/', async(req, res) => {
-  const movies = await MovieGenres.find().sort('name');
-  res.send(movies);
-  });
-  
-router.get('/:id', async (req, res) => {
-  const movie = await MovieGenres.findById(req.params.id);
-  console.log(movie)
-  if(!movie) {
-    return res.status(400).send('This is ID is not valid! please use the correct movie ID.')
-  }
-  res.send(movie);
-    });
-  
-  // Add a new genre
+router.get('/', async (req, res) => {
+    const movies = await Movie.find().sort('name');
+    res.send(movies);
+});
+
 router.post('/', async (req, res) => {
-  const {error} = validate(req.body)
-  if(error){return res.status(400).send(error.details[0].message)}
+    const {error} = validate(req.body);
+    if(error) return res.status(400).send(error.details[0].message);
 
-  let movie = new MovieGenres({
-    name: req.body.name,
-    genre: req.body.genre
-  });
-  movie = await movie.save();
-  res.status(200).send(movie);
+    const genre = await Genre.findById(req.body.genreId);
+    if(!genre) return res.status(400).send('Invalid genre.');
+
+    let movie = new Movie({
+        title: req.body.title,
+        genre: {
+            _id: genre._id,
+            name: genre.name 
+        },
+        numberInStock : req.body.numberInStock,
+        dailyRentalRate : req.body.dailyRentalRate
+    });
+
+    movie = await movie.save();
+    res.send(movie);
 });
-  // update a genre by id
+
 router.put('/:id', async (req, res) => {
-  //validate input from user
-  const {error} = validate(req.body);
-  if(error) {
-    return res.status(400).send(error.details[0].message);
-  }
-  //update db
-  const updatedMovie = await MovieGenres.findByIdAndUpdate(req.params.id, 
-                        {$set: {genre: req.body.genre, name: req.body.name}},
-                        {new:true});
-  if(!updatedMovie){res.status(400).send('This is ID is not valid! please use the correct movie ID.')}
-  res.send(updatedMovie);
+    const {error} = validate(req.body);
+    if(error) return res.status(400).send(error.details[0].message);
+    
+    let movie = await Movie.findById(req.params.id);
+    if(!movie) return res.status(400).send('Invalid movie ID');
+
+    movie.title = req.body.title;
+    movie.genre._id = req.body.genreId;
+    movie.numberInStock = req.body.numberInStock;
+    movie.dailyRentalRate = req.body.dailyRentalRate;
+    movie = await movie.save();
+    res.send(movie);
 });
-//update by name
-router.put('/', async (req, res) => {
-  //use the query ?searchBy=name to update the movie you want to
-  //req.body ===> {"genre" : "updated genre"}
-  const {error} = validate(req.body);
-  if(error) {
-   return res.status(400).send(error.details[0].message);
-  }
- 
-  const movie = await MovieGenres.find({name: req.query['searchBy'].toUpperCase()});
-  if(!movie){
-    return res.status(400)
-    .send("this movie is not in the collection, use correct spelling or try another movie")
-  }
-  const updatedMovie = await MovieGenres.findByIdAndUpdate(movie[0]._id, {
-    $set: {genre: req.body.genre}}, {new: true});
-    res.send(updatedMovie);
-  });
 
 router.delete('/:id', async (req, res) => {
-  const deletedMovie = await MovieGenres.findByIdAndRemove(req.params.id);
-  if(!deletedMovie){return res.status(400).send('This id does not exist, try another one')}
-  res.status(200).send(`deleted movie: ${deletedMovie}`);
-});
+    const deletedMovie = await Movie.findByIdAndRemove(req.params.id);
+    if(!deletedMovie) return res.status(400).send('INVALID ID');
+
+    res.send(`deleted movie: ${deletedMovie}, thank you!`)
+
+})
 
 module.exports = router;
