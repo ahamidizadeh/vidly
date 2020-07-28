@@ -3,6 +3,7 @@ const home = require('./routes/home');
 const genres =require('./routes/genres')
 const customers =require('./routes/customers')
 const movies = require('./routes/movies');
+const rentals = require('./routes/rentals');
 const app = express();
 const mongoose = require('mongoose');
 
@@ -17,6 +18,7 @@ app.use('/', home);
 app.use('/customers', customers);
 app.use('/api/genres', genres);
 app.use('/api/movies', movies);
+app.use('/api/rentals', rentals);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`connected to the port : ${port}`));
